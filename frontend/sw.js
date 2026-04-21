@@ -1,4 +1,4 @@
-const CACHE_NAME = "stocky-v2";
+const CACHE_NAME = "stocky-v3";
 const JSPDF_URL = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
 
 const STATIC_ASSETS = [
