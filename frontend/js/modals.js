@@ -1,10 +1,12 @@
 // ── Item Modal (add / edit item + variants) ──
 let editingItemId = null;
 let variantCount = 0;
+let originalVariantIds = [];
 
 function openItemModal(itemId = null) {
   editingItemId = itemId;
   variantCount = 0;
+  originalVariantIds = [];
 
   const modal = document.getElementById("item-modal");
   const title = document.getElementById("item-modal-title");
@@ -19,7 +21,10 @@ function openItemModal(itemId = null) {
     if (!item) return;
     title.textContent = "Edit Item";
     form.itemName.value = item.name;
-    item.variants.forEach(v => addVariantEditor(v));
+    item.variants.forEach(v => {
+      originalVariantIds.push(v.id);
+      addVariantEditor(v);
+    });
   } else {
     title.textContent = "Add Item";
     addVariantEditor();
@@ -95,6 +100,8 @@ async function submitItemForm(e) {
     }
 
     const editors = document.querySelectorAll(".variant-editor");
+    const remainingVariantIds = [];
+
     for (const editor of editors) {
       const idx = editor.dataset.idx;
       const code = form[`code_${idx}`]?.value.trim();
@@ -107,6 +114,7 @@ async function submitItemForm(e) {
       const payload = { item: itemId, code, name: vname, quantity };
 
       if (variantId) {
+        remainingVariantIds.push(parseInt(variantId, 10));
         await apiFetch(`/api/variants/${variantId}/`, {
           method: "PUT",
           body: JSON.stringify(payload),
@@ -116,6 +124,13 @@ async function submitItemForm(e) {
           method: "POST",
           body: JSON.stringify(payload),
         });
+      }
+    }
+
+    // Delete variants that were removed from the editor
+    for (const vid of originalVariantIds) {
+      if (!remainingVariantIds.includes(vid)) {
+        await apiFetch(`/api/variants/${vid}/`, { method: "DELETE" });
       }
     }
 

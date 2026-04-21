@@ -7,7 +7,7 @@ from .models import DailyReport, Item, Log, User, Variant
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
-        data["role"] = self.user.role
+        data["role"] = "admin" if self.user.is_superuser else self.user.role
         data["username"] = self.user.username
         return data
 
