@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stocky — Dashboard</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-left">
+      <span class="app-title">📦 Stocky</span>
+      <div id="offline-badge" class="offline-badge">
+        <div class="offline-dot"></div>
+        <span id="offline-label">Offline Mode</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="user-chip">
+        <span id="header-username"></span>
+        <span id="header-role" class="role-badge"></span>
+      </div>
+      <a id="admin-link" href="/admin.html" class="nav-link" style="display:none">Admin</a>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg class="search-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input type="search" id="search-input" placeholder="Search items…" />
+      </div>
+    </div>
+
+    <div id="inventory-grid" class="inventory-grid"></div>
+  </main>
+
+  <button class="fab" id="add-item-fab" title="Add item" onclick="openItemModal()">+</button>
+
+  <!-- Item Modal -->
+  <div id="item-modal" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <span id="item-modal-title" class="modal-title">Add Item</span>
+        <button class="modal-close" onclick="closeItemModal()">✕</button>
+      </div>
+      <form id="item-form" onsubmit="submitItemForm(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="itemName">Item Name</label>
+            <input type="text" id="itemName" name="itemName" required placeholder="e.g. Steel Cable" />
+          </div>
+          <div class="form-group">
+            <label for="itemUnit">Unit</label>
+            <select id="itemUnit" name="itemUnit" onchange="updateLengthVisibility()">
+              <option value="meters">Meters</option>
+              <option value="boxes">Boxes</option>
+            </select>
+          </div>
+
+          <div style="margin-top:16px;margin-bottom:8px">
+            <label style="font-size:14px;font-weight:700;text-transform:none;letter-spacing:0;color:var(--text)">
+              Variants
+            </label>
+          </div>
+          <div id="variants-wrap"></div>
+          <button type="button" class="add-variant-btn" onclick="addVariantEditor()">+ Add Variant</button>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeItemModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="width:auto">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Stock Action Modal -->
+  <div id="stock-modal" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <span class="modal-title">Stock Action</span>
+        <button class="modal-close" onclick="closeStockModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="stock-item-info" class="stock-item-info"></div>
+
+        <div class="form-group" style="margin-bottom:14px">
+          <label>Action</label>
+          <div style="display:flex;gap:10px">
+            <button type="button" id="btn-action-add" class="btn btn-primary" style="flex:1" onclick="setStockAction('add')">Add Stock</button>
+            <button type="button" id="btn-action-remove" class="btn btn-ghost" style="flex:1" onclick="setStockAction('remove')">Remove Stock</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Quantity</label>
+          <div class="qty-input-wrap">
+            <button type="button" class="qty-btn" onclick="adjustQty(-1)">−</button>
+            <input type="number" id="stock-qty" min="1" value="1" />
+            <button type="button" class="qty-btn" onclick="adjustQty(1)">+</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeStockModal()">Cancel</button>
+        <button type="button" id="confirm-stock-btn" class="btn btn-primary" style="width:auto" onclick="confirmStockAction()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock Alert -->
+  <div id="low-stock-alert" class="alert-overlay">
+    <div class="alert-box">
+      <div class="alert-icon">⚠️</div>
+      <div class="alert-title">Low Stock Alert</div>
+      <div class="alert-body">The following variants are running low:</div>
+      <ul id="alert-items-list" class="alert-items"></ul>
+      <button class="btn btn-primary" style="width:auto" onclick="document.getElementById('low-stock-alert').classList.remove('open')">Got it</button>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/offline.js"></script>
+  <script src="/js/inventory.js"></script>
+  <script src="/js/modals.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+
+    requireAuth();
+
+    // Set up header
+    document.getElementById("header-username").textContent = getUsername() || "";
+    const role = getRole();
+    const roleBadge = document.getElementById("header-role");
+    roleBadge.textContent = role;
+    if (role === "staff") roleBadge.classList.add("staff");
+    if (role === "admin") document.getElementById("admin-link").style.display = "";
+
+    // Offline badge
+    function updateOfflineBadge() {
+      const badge = document.getElementById("offline-badge");
+      if (!navigator.onLine) {
+        badge.classList.add("visible");
+        document.getElementById("offline-label").textContent = "Offline Mode";
+      } else {
+        badge.classList.remove("visible");
+      }
+    }
+    updateOfflineBadge();
+    window.addEventListener("online", async () => {
+      const badge = document.getElementById("offline-badge");
+      badge.classList.add("visible");
+      document.getElementById("offline-label").textContent = "Syncing…";
+      await syncPending();
+      updateOfflineBadge();
+      loadInventory();
+    });
+    window.addEventListener("offline", updateOfflineBadge);
+
+    // Search with debounce
+    let searchTimer;
+    document.getElementById("search-input").addEventListener("input", e => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        lowStockAlertShown = false;
+        loadInventory(e.target.value.trim());
+      }, 300);
+    });
+
+    // Initial load
+    syncPending().then(() => loadInventory());
+  </script>
+</body>
+</html>

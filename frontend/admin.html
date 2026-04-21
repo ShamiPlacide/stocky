@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stocky — Admin Panel</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="header-left">
+      <span class="app-title">📦 Stocky</span>
+      <div id="offline-badge" class="offline-badge">
+        <div class="offline-dot"></div>
+        <span>Offline Mode</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="user-chip">
+        <span id="header-username"></span>
+        <span class="role-badge">Admin</span>
+      </div>
+      <a href="/dashboard.html" class="nav-link">Inventory</a>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="page-header">
+      <h2>Admin Panel</h2>
+      <p>View activity logs and generate daily reports.</p>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('logs', this)">Activity Logs</button>
+      <button class="nav-tab" onclick="switchTab('report', this)">Daily Report</button>
+    </div>
+
+    <!-- Logs tab -->
+    <div id="tab-logs" class="tab-content active">
+      <div class="toolbar" style="margin-bottom:16px">
+        <div class="form-group" style="margin:0;flex:0 0 auto">
+          <label style="margin-bottom:4px">Filter by date</label>
+          <input type="date" id="log-date-filter" style="width:180px" />
+        </div>
+        <button class="btn btn-ghost btn-sm" style="align-self:flex-end" onclick="applyLogFilter()">Apply</button>
+        <button class="btn btn-ghost btn-sm" style="align-self:flex-end" onclick="clearLogFilter()">Clear</button>
+      </div>
+      <div class="logs-table-wrap">
+        <table class="logs-table">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Variant</th>
+              <th>Qty Change</th>
+              <th>User</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="logs-tbody">
+            <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Report tab -->
+    <div id="tab-report" class="tab-content">
+      <div class="report-section">
+        <h3>End-of-Day Report</h3>
+        <p>
+          Generates a PDF containing today's stock activity (adds, removes, edits)
+          and a full inventory snapshot with low-stock highlights.
+        </p>
+        <button id="generate-report-btn" class="btn btn-primary" style="width:auto" onclick="generatePDFReport()">
+          Download PDF Report
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- jsPDF (pinned version, cached by SW) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+          integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfYa3E3jXqbQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/offline.js"></script>
+  <script src="/js/inventory.js"></script>
+  <script src="/js/report.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    }
+
+    requireAdmin();
+
+    document.getElementById("header-username").textContent = getUsername() || "";
+
+    // Offline badge
+    function updateOfflineBadge() {
+      document.getElementById("offline-badge").classList.toggle("visible", !navigator.onLine);
+    }
+    updateOfflineBadge();
+    window.addEventListener("online", updateOfflineBadge);
+    window.addEventListener("offline", updateOfflineBadge);
+
+    function switchTab(name, btn) {
+      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+      document.querySelectorAll(".nav-tab").forEach(el => el.classList.remove("active"));
+      document.getElementById(`tab-${name}`).classList.add("active");
+      btn.classList.add("active");
+    }
+
+    function applyLogFilter() {
+      const d = document.getElementById("log-date-filter").value;
+      loadLogs(d);
+    }
+
+    function clearLogFilter() {
+      document.getElementById("log-date-filter").value = "";
+      loadLogs();
+    }
+
+    loadLogs();
+  </script>
+</body>
+</html>
