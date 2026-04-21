@@ -3,32 +3,35 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stocky — Dashboard</title>
+  <title>Stocky</title>
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#2563eb" />
 </head>
 <body>
 
-  <!-- Sidebar overlay (admin only) -->
+  <!-- Admin sidebar overlay -->
   <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
 
-  <!-- Sidebar (admin only) -->
+  <!-- Admin sidebar -->
   <aside id="sidebar" class="sidebar">
     <div class="sidebar-header">
       <span class="sidebar-title">Menu</span>
       <button class="sidebar-close" onclick="closeSidebar()">✕</button>
     </div>
     <nav class="sidebar-nav">
-      <a href="/admin.html" class="sidebar-item">
+      <button class="sidebar-item" onclick="showSection('inventory'); closeSidebar()">
+        <span class="sidebar-icon">📦</span> Inventory
+      </button>
+      <button class="sidebar-item" onclick="showSection('logs'); closeSidebar()">
         <span class="sidebar-icon">📜</span> Logs
-      </a>
-      <a href="/admin.html?s=staff" class="sidebar-item">
+      </button>
+      <button class="sidebar-item" onclick="showSection('staff'); closeSidebar()">
         <span class="sidebar-icon">👥</span> Staff
-      </a>
-      <a href="/admin.html?s=report" class="sidebar-item">
+      </button>
+      <button class="sidebar-item" onclick="showSection('report'); closeSidebar()">
         <span class="sidebar-icon">📊</span> Reports
-      </a>
+      </button>
     </nav>
     <div class="sidebar-divider"></div>
     <div class="sidebar-item theme-toggle-row">
@@ -44,6 +47,7 @@
     </button>
   </aside>
 
+  <!-- Header -->
   <header class="app-header">
     <div class="header-left">
       <button id="hamburger-btn" class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu" style="display:none">
@@ -56,6 +60,10 @@
       </div>
     </div>
     <div class="header-right">
+      <label id="staff-dark-toggle" class="toggle-switch" title="Toggle dark mode" style="display:none">
+        <input type="checkbox" id="dark-mode-toggle-staff" onchange="toggleDarkMode(this.checked)" />
+        <span class="toggle-slider"></span>
+      </label>
       <div class="user-chip">
         <span id="header-username"></span>
         <span id="header-role" class="role-badge"></span>
@@ -64,20 +72,89 @@
     </div>
   </header>
 
+  <!-- Main content -->
   <main class="main-content">
-    <div class="toolbar">
-      <div class="search-wrap">
-        <svg class="search-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-        <input type="search" id="search-input" placeholder="Search items…" />
+
+    <!-- Inventory section (default for both roles) -->
+    <div id="section-inventory" class="admin-section active">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg class="search-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input type="search" id="search-input" placeholder="Search items…" />
+        </div>
+      </div>
+      <div id="inventory-grid" class="inventory-grid"></div>
+    </div>
+
+    <!-- Logs section (admin only) -->
+    <div id="section-logs" class="admin-section">
+      <div class="page-header">
+        <h2>Activity Logs</h2>
+        <p>Track every stock action across the system.</p>
+      </div>
+      <div class="toolbar" style="margin-bottom:16px">
+        <div class="form-group" style="margin:0;flex:0 0 auto">
+          <label style="margin-bottom:4px">Filter by date</label>
+          <input type="date" id="log-date-filter" style="width:180px" />
+        </div>
+        <button class="btn btn-ghost btn-sm" style="align-self:flex-end" onclick="applyLogFilter()">Apply</button>
+        <button class="btn btn-ghost btn-sm" style="align-self:flex-end" onclick="clearLogFilter()">Clear</button>
+      </div>
+      <div class="logs-table-wrap">
+        <table class="logs-table">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Item</th>
+              <th>Code</th>
+              <th>Qty Change</th>
+              <th>User</th>
+              <th>Timestamp</th>
+            </tr>
+          </thead>
+          <tbody id="logs-tbody">
+            <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">Loading…</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-    <div id="inventory-grid" class="inventory-grid"></div>
+
+    <!-- Staff section (admin only) -->
+    <div id="section-staff" class="admin-section">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2>Staff</h2>
+          <p>Manage who has access to Stocky.</p>
+        </div>
+        <button class="btn btn-primary" style="width:auto" onclick="openAddStaffModal()">+ Add Member</button>
+      </div>
+      <div id="staff-list" class="staff-list">
+        <div class="loader"><div class="spinner"></div><p>Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Report section (admin only) -->
+    <div id="section-report" class="admin-section">
+      <div class="page-header">
+        <h2>Daily Report</h2>
+        <p>Generate and download a PDF snapshot of today's activity.</p>
+      </div>
+      <div class="report-section">
+        <h3>End-of-Day Report</h3>
+        <p>Includes today's stock actions (adds, removes, edits) and a full inventory snapshot with low-stock highlights.</p>
+        <button id="generate-report-btn" class="btn btn-primary" style="width:auto" onclick="generatePDFReport()">
+          Download PDF Report
+        </button>
+      </div>
+    </div>
+
   </main>
 
-  <button class="fab" title="Add item" onclick="openItemModal()">+</button>
+  <!-- FAB: only visible on inventory section -->
+  <button id="fab-add" class="fab" title="Add item" onclick="openItemModal()">+</button>
 
   <!-- Item Modal -->
   <div id="item-modal" class="modal-overlay">
@@ -152,29 +229,83 @@
     </div>
   </div>
 
+  <!-- Add Staff Modal (admin only) -->
+  <div id="staff-modal" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <span class="modal-title">Add Staff Member</span>
+        <button class="modal-close" onclick="closeAddStaffModal()">✕</button>
+      </div>
+      <form id="staff-form" onsubmit="submitAddStaff(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="staff-username">Username</label>
+            <input type="text" id="staff-username" name="username" required placeholder="e.g. john_doe" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="staff-password">Password</label>
+            <input type="password" id="staff-password" name="password" required placeholder="Min. 6 characters" autocomplete="new-password" />
+          </div>
+          <div class="form-group">
+            <label for="staff-role">Role</label>
+            <select id="staff-role" name="role">
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div id="staff-error" class="error-msg"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeAddStaffModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="width:auto">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+          integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfYa3E3jXqbQ=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <script src="/js/config.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/offline.js"></script>
   <script src="/js/inventory.js"></script>
   <script src="/js/modals.js"></script>
+  <script src="/js/report.js"></script>
+  <script src="/js/staff.js"></script>
   <script>
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 
     requireAuth();
 
-    document.getElementById("header-username").textContent = getUsername() || "";
     const role = getRole();
+    document.getElementById("header-username").textContent = getUsername() || "";
     const roleBadge = document.getElementById("header-role");
     roleBadge.textContent = role;
     if (role === "staff") roleBadge.classList.add("staff");
 
-    // Show hamburger and sidebar only for admins
     if (role === "admin") {
       document.getElementById("hamburger-btn").style.display = "";
+    } else {
+      document.getElementById("staff-dark-toggle").style.display = "";
     }
 
+    // Dark mode — keep both toggles in sync
+    function toggleDarkMode(on) {
+      document.documentElement.setAttribute("data-theme", on ? "dark" : "light");
+      localStorage.setItem("stocky_dark", on ? "1" : "0");
+      document.getElementById("dark-mode-toggle").checked = on;
+      document.getElementById("dark-mode-toggle-staff").checked = on;
+    }
+    const savedDark = localStorage.getItem("stocky_dark") === "1";
+    document.getElementById("dark-mode-toggle").checked = savedDark;
+    document.getElementById("dark-mode-toggle-staff").checked = savedDark;
+    if (savedDark) document.documentElement.setAttribute("data-theme", "dark");
+
+    // Sidebar (admin only)
     function openSidebar() {
       document.getElementById("sidebar").classList.add("open");
       document.getElementById("sidebar-overlay").classList.add("visible");
@@ -184,22 +315,28 @@
       document.getElementById("sidebar-overlay").classList.remove("visible");
     }
 
-    function toggleDarkMode(on) {
-      document.documentElement.setAttribute("data-theme", on ? "dark" : "light");
-      localStorage.setItem("stocky_dark", on ? "1" : "0");
+    // Section switching — FAB only visible on inventory
+    function showSection(name) {
+      document.querySelectorAll(".admin-section").forEach(s => s.classList.remove("active"));
+      document.getElementById("section-" + name).classList.add("active");
+      document.getElementById("fab-add").style.display = name === "inventory" ? "" : "none";
+      if (name === "logs") loadLogs();
+      if (name === "staff") loadStaff();
+      if (name === "inventory") { lowStockAlertShown = false; loadInventory(); }
     }
-    const savedDark = localStorage.getItem("stocky_dark") === "1";
-    document.getElementById("dark-mode-toggle").checked = savedDark;
-    if (savedDark) document.documentElement.setAttribute("data-theme", "dark");
 
+    // Log filter
+    function applyLogFilter() {
+      loadLogs(document.getElementById("log-date-filter").value);
+    }
+    function clearLogFilter() {
+      document.getElementById("log-date-filter").value = "";
+      loadLogs();
+    }
+
+    // Offline badge
     function updateOfflineBadge() {
-      const badge = document.getElementById("offline-badge");
-      if (!navigator.onLine) {
-        badge.classList.add("visible");
-        document.getElementById("offline-label").textContent = "Offline Mode";
-      } else {
-        badge.classList.remove("visible");
-      }
+      document.getElementById("offline-badge").classList.toggle("visible", !navigator.onLine);
     }
     updateOfflineBadge();
     window.addEventListener("online", async () => {
@@ -212,6 +349,7 @@
     });
     window.addEventListener("offline", updateOfflineBadge);
 
+    // Search
     let searchTimer;
     document.getElementById("search-input").addEventListener("input", e => {
       clearTimeout(searchTimer);
@@ -221,6 +359,7 @@
       }, 300);
     });
 
+    // Initial load
     syncPending().then(() => loadInventory());
   </script>
 </body>
