@@ -14,7 +14,8 @@ async function generatePDFReport() {
     buildPDF(data);
     showToast("Report downloaded", "success");
   } catch (err) {
-    showToast(err.message === "NETWORK_ERROR" ? "Cannot generate report while offline" : "Failed to generate report", "error");
+    console.error("Report error:", err);
+    showToast(err.message === "NETWORK_ERROR" ? "Cannot generate report while offline" : `Report error: ${err.message}`, "error");
   } finally {
     btn.disabled = false;
     btn.textContent = "Download PDF Report";
@@ -105,10 +106,11 @@ function buildPDF(data) {
   heading("Current Inventory");
   y += 2;
 
-  if (!data.items.length) {
+  const items = data.items || [];
+  if (!items.length) {
     subtext("No inventory data.");
   } else {
-    data.items.forEach(item => {
+    items.forEach(item => {
       checkPage(18);
       doc.setFontSize(10); doc.setFont("helvetica", "bold");
       doc.setTextColor(37, 99, 235); doc.text(item.name, margin, y);
