@@ -105,7 +105,7 @@ async function logout() {
 // ── Login page handler ──
 function initLoginPage() {
   if (getAccess()) {
-    window.location.href = "/dashboard.html";
+    window.location.href = getRole() === "admin" ? "/admin.html" : "/dashboard.html";
     return;
   }
 
@@ -138,7 +138,7 @@ function initLoginPage() {
       }
 
       saveTokens(data);
-      window.location.href = "/dashboard.html";
+      window.location.href = data.role === "admin" ? "/admin.html" : "/dashboard.html";
     } catch {
       errEl.textContent = "Cannot reach server. Check your connection.";
       errEl.classList.add("visible");
