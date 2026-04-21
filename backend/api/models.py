@@ -11,9 +11,7 @@ class User(AbstractUser):
 
 
 class Item(models.Model):
-    UNIT_CHOICES = [("meters", "Meters"), ("boxes", "Boxes")]
     name = models.CharField(max_length=255)
-    unit = models.CharField(max_length=10, choices=UNIT_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -21,22 +19,20 @@ class Item(models.Model):
         ordering = ["name"]
 
     def __str__(self):
-        return f"{self.name} ({self.unit})"
+        return self.name
 
 
 class Variant(models.Model):
     item = models.ForeignKey(Item, related_name="variants", on_delete=models.CASCADE)
-    color = models.CharField(max_length=100)
-    length = models.FloatField(null=True, blank=True)
+    code = models.CharField(max_length=50)
+    name = models.CharField(max_length=255)
     quantity = models.PositiveIntegerField(default=0)
 
     class Meta:
         db_table = "variants"
 
     def __str__(self):
-        if self.item.unit == "meters":
-            return f"{self.item.name} - {self.color} - {self.length}m"
-        return f"{self.item.name} - {self.color}"
+        return f"{self.item.name} [{self.code}] {self.name}"
 
 
 class Log(models.Model):

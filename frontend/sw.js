@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
   "/js/modals.js",
   "/js/offline.js",
   "/js/report.js",
+  "/js/staff.js",
   "/manifest.json",
   JSPDF_URL,
 ];

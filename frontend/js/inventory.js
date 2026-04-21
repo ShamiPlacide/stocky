@@ -57,15 +57,12 @@ function renderInventory(items) {
     const variantsHtml = item.variants.length
       ? item.variants.map(v => {
           const low = v.quantity <= window.LOW_STOCK_THRESHOLD;
-          const label = item.unit === "meters"
-            ? `${v.color} · ${v.length}m`
-            : v.color;
           return `
             <div class="variant-row ${low ? "low-stock" : ""}"
                  onclick="openStockModal(${JSON.stringify(item).replace(/"/g,"&quot;")}, ${JSON.stringify(v).replace(/"/g,"&quot;")})">
               <div class="variant-info">
-                <div class="color-dot" style="background:${cssColor(v.color)}"></div>
-                <span class="variant-label">${escHtml(label)}</span>
+                <span class="variant-code">${escHtml(v.code)}</span>
+                <span class="variant-label">${escHtml(v.name)}</span>
               </div>
               <span class="variant-qty ${low ? "low" : ""}">${v.quantity}</span>
             </div>`;
@@ -76,7 +73,6 @@ function renderInventory(items) {
       <div class="item-card ${hasLowStock ? "low-stock" : ""}" id="item-${item.id}">
         <div class="item-header">
           <span class="item-name">${escHtml(item.name)}</span>
-          <span class="item-unit">${item.unit}</span>
         </div>
         <div class="variant-list">${variantsHtml}</div>
         <div class="item-actions">
@@ -96,12 +92,7 @@ function checkLowStock(lowStockItems) {
   const list = lowStockItems.flatMap(item =>
     item.variants
       .filter(v => v.quantity <= window.LOW_STOCK_THRESHOLD)
-      .map(v => {
-        const label = item.unit === "meters"
-          ? `${item.name} — ${v.color} (${v.length}m): ${v.quantity} left`
-          : `${item.name} — ${v.color}: ${v.quantity} left`;
-        return `<li>${escHtml(label)}</li>`;
-      })
+      .map(v => `<li>${escHtml(item.name)} [${escHtml(v.code)}] ${escHtml(v.name)}: ${v.quantity} left</li>`)
   ).join("");
 
   document.getElementById("alert-items-list").innerHTML = list;
@@ -124,7 +115,6 @@ async function deleteItem(itemId) {
   }
 }
 
-// ── Utility ──
 function escHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -133,16 +123,6 @@ function escHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
-function cssColor(name) {
-  const map = {
-    red: "#ef4444", blue: "#3b82f6", green: "#22c55e", yellow: "#eab308",
-    orange: "#f97316", purple: "#a855f7", pink: "#ec4899", brown: "#92400e",
-    black: "#1e293b", white: "#f1f5f9", gray: "#94a3b8", grey: "#94a3b8",
-  };
-  return map[name.toLowerCase()] || "#94a3b8";
-}
-
-// ── Toast ──
 function showToast(msg, type = "success") {
   const container = document.getElementById("toast-container");
   if (!container) return;

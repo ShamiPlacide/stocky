@@ -38,11 +38,10 @@
         <input type="search" id="search-input" placeholder="Search items…" />
       </div>
     </div>
-
     <div id="inventory-grid" class="inventory-grid"></div>
   </main>
 
-  <button class="fab" id="add-item-fab" title="Add item" onclick="openItemModal()">+</button>
+  <button class="fab" title="Add item" onclick="openItemModal()">+</button>
 
   <!-- Item Modal -->
   <div id="item-modal" class="modal-overlay">
@@ -55,16 +54,8 @@
         <div class="modal-body">
           <div class="form-group">
             <label for="itemName">Item Name</label>
-            <input type="text" id="itemName" name="itemName" required placeholder="e.g. Steel Cable" />
+            <input type="text" id="itemName" name="itemName" required placeholder="e.g. PVC Ceiling" />
           </div>
-          <div class="form-group">
-            <label for="itemUnit">Unit</label>
-            <select id="itemUnit" name="itemUnit" onchange="updateLengthVisibility()">
-              <option value="meters">Meters</option>
-              <option value="boxes">Boxes</option>
-            </select>
-          </div>
-
           <div style="margin-top:16px;margin-bottom:8px">
             <label style="font-size:14px;font-weight:700;text-transform:none;letter-spacing:0;color:var(--text)">
               Variants
@@ -90,7 +81,6 @@
       </div>
       <div class="modal-body">
         <div id="stock-item-info" class="stock-item-info"></div>
-
         <div class="form-group" style="margin-bottom:14px">
           <label>Action</label>
           <div style="display:flex;gap:10px">
@@ -98,7 +88,6 @@
             <button type="button" id="btn-action-remove" class="btn btn-ghost" style="flex:1" onclick="setStockAction('remove')">Remove Stock</button>
           </div>
         </div>
-
         <div class="form-group">
           <label>Quantity</label>
           <div class="qty-input-wrap">
@@ -122,11 +111,11 @@
       <div class="alert-title">Low Stock Alert</div>
       <div class="alert-body">The following variants are running low:</div>
       <ul id="alert-items-list" class="alert-items"></ul>
-      <button class="btn btn-primary" style="width:auto" onclick="document.getElementById('low-stock-alert').classList.remove('open')">Got it</button>
+      <button class="btn btn-primary" style="width:auto"
+        onclick="document.getElementById('low-stock-alert').classList.remove('open')">Got it</button>
     </div>
   </div>
 
-  <!-- Toast container -->
   <div id="toast-container" class="toast-container"></div>
 
   <script src="/js/config.js"></script>
@@ -135,13 +124,10 @@
   <script src="/js/inventory.js"></script>
   <script src="/js/modals.js"></script>
   <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
-    }
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 
     requireAuth();
 
-    // Set up header
     document.getElementById("header-username").textContent = getUsername() || "";
     const role = getRole();
     const roleBadge = document.getElementById("header-role");
@@ -149,7 +135,6 @@
     if (role === "staff") roleBadge.classList.add("staff");
     if (role === "admin") document.getElementById("admin-link").style.display = "";
 
-    // Offline badge
     function updateOfflineBadge() {
       const badge = document.getElementById("offline-badge");
       if (!navigator.onLine) {
@@ -170,7 +155,6 @@
     });
     window.addEventListener("offline", updateOfflineBadge);
 
-    // Search with debounce
     let searchTimer;
     document.getElementById("search-input").addEventListener("input", e => {
       clearTimeout(searchTimer);
@@ -180,7 +164,6 @@
       }, 300);
     });
 
-    // Initial load
     syncPending().then(() => loadInventory());
   </script>
 </body>

@@ -1,17 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stocky — Admin Panel</title>
+  <title>Stocky — Admin</title>
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#2563eb" />
 </head>
 <body>
 
+  <!-- Sidebar overlay -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Menu</span>
+      <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="sidebar-item" onclick="showSection('logs'); closeSidebar()">
+        <span class="sidebar-icon">📜</span> Logs
+      </button>
+      <button class="sidebar-item" onclick="showSection('staff'); closeSidebar()">
+        <span class="sidebar-icon">👥</span> Staff
+      </button>
+      <button class="sidebar-item" onclick="showSection('report'); closeSidebar()">
+        <span class="sidebar-icon">📊</span> Reports
+      </button>
+    </nav>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-item theme-toggle-row">
+      <span><span class="sidebar-icon">🌙</span> Dark Mode</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode(this.checked)" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <a href="/dashboard.html" class="sidebar-item">
+      <span class="sidebar-icon">📦</span> Inventory
+    </a>
+    <button class="sidebar-item danger" onclick="logout()">
+      <span class="sidebar-icon">🚪</span> Sign out
+    </button>
+  </aside>
+
+  <!-- Header -->
   <header class="app-header">
     <div class="header-left">
+      <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
       <span class="app-title">📦 Stocky</span>
       <div id="offline-badge" class="offline-badge">
         <div class="offline-dot"></div>
@@ -23,24 +69,18 @@
         <span id="header-username"></span>
         <span class="role-badge">Admin</span>
       </div>
-      <a href="/dashboard.html" class="nav-link">Inventory</a>
-      <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </div>
   </header>
 
+  <!-- Main content -->
   <main class="main-content">
-    <div class="page-header">
-      <h2>Admin Panel</h2>
-      <p>View activity logs and generate daily reports.</p>
-    </div>
 
-    <div class="nav-tabs">
-      <button class="nav-tab active" onclick="switchTab('logs', this)">Activity Logs</button>
-      <button class="nav-tab" onclick="switchTab('report', this)">Daily Report</button>
-    </div>
-
-    <!-- Logs tab -->
-    <div id="tab-logs" class="tab-content active">
+    <!-- Logs section -->
+    <div id="section-logs" class="admin-section active">
+      <div class="page-header">
+        <h2>Activity Logs</h2>
+        <p>Track every stock action across the system.</p>
+      </div>
       <div class="toolbar" style="margin-bottom:16px">
         <div class="form-group" style="margin:0;flex:0 0 auto">
           <label style="margin-bottom:4px">Filter by date</label>
@@ -54,38 +94,87 @@
           <thead>
             <tr>
               <th>Action</th>
-              <th>Variant</th>
+              <th>Item</th>
+              <th>Code</th>
               <th>Qty Change</th>
               <th>User</th>
               <th>Timestamp</th>
             </tr>
           </thead>
           <tbody id="logs-tbody">
-            <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted)">Loading…</td></tr>
+            <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted)">Loading…</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Report tab -->
-    <div id="tab-report" class="tab-content">
+    <!-- Staff section -->
+    <div id="section-staff" class="admin-section">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2>Staff</h2>
+          <p>Manage who has access to Stocky.</p>
+        </div>
+        <button class="btn btn-primary" style="width:auto" onclick="openAddStaffModal()">+ Add Member</button>
+      </div>
+      <div id="staff-list" class="staff-list">
+        <div class="loader"><div class="spinner"></div><p>Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- Report section -->
+    <div id="section-report" class="admin-section">
+      <div class="page-header">
+        <h2>Daily Report</h2>
+        <p>Generate and download a PDF snapshot of today's activity.</p>
+      </div>
       <div class="report-section">
         <h3>End-of-Day Report</h3>
-        <p>
-          Generates a PDF containing today's stock activity (adds, removes, edits)
-          and a full inventory snapshot with low-stock highlights.
-        </p>
+        <p>Includes today's stock actions (adds, removes, edits) and a full inventory snapshot with low-stock highlights.</p>
         <button id="generate-report-btn" class="btn btn-primary" style="width:auto" onclick="generatePDFReport()">
           Download PDF Report
         </button>
       </div>
     </div>
+
   </main>
 
-  <!-- Toast container -->
+  <!-- Add Staff Modal -->
+  <div id="staff-modal" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <span class="modal-title">Add Staff Member</span>
+        <button class="modal-close" onclick="closeAddStaffModal()">✕</button>
+      </div>
+      <form id="staff-form" onsubmit="submitAddStaff(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="staff-username">Username</label>
+            <input type="text" id="staff-username" name="username" required placeholder="e.g. john_doe" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="staff-password">Password</label>
+            <input type="password" id="staff-password" name="password" required placeholder="Min. 6 characters" autocomplete="new-password" />
+          </div>
+          <div class="form-group">
+            <label for="staff-role">Role</label>
+            <select id="staff-role" name="role">
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div id="staff-error" class="error-msg"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" onclick="closeAddStaffModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="width:auto">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- jsPDF (pinned version, cached by SW) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
           integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfYa3E3jXqbQ=="
           crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -95,10 +184,9 @@
   <script src="/js/offline.js"></script>
   <script src="/js/inventory.js"></script>
   <script src="/js/report.js"></script>
+  <script src="/js/staff.js"></script>
   <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
-    }
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 
     requireAdmin();
 
@@ -112,23 +200,43 @@
     window.addEventListener("online", updateOfflineBadge);
     window.addEventListener("offline", updateOfflineBadge);
 
-    function switchTab(name, btn) {
-      document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
-      document.querySelectorAll(".nav-tab").forEach(el => el.classList.remove("active"));
-      document.getElementById(`tab-${name}`).classList.add("active");
-      btn.classList.add("active");
+    // Dark mode: persist across sessions
+    function toggleDarkMode(on) {
+      document.documentElement.setAttribute("data-theme", on ? "dark" : "light");
+      localStorage.setItem("stocky_dark", on ? "1" : "0");
+    }
+    const savedDark = localStorage.getItem("stocky_dark") === "1";
+    document.getElementById("dark-mode-toggle").checked = savedDark;
+    if (savedDark) document.documentElement.setAttribute("data-theme", "dark");
+
+    // Sidebar
+    function openSidebar() {
+      document.getElementById("sidebar").classList.add("open");
+      document.getElementById("sidebar-overlay").classList.add("visible");
+    }
+    function closeSidebar() {
+      document.getElementById("sidebar").classList.remove("open");
+      document.getElementById("sidebar-overlay").classList.remove("visible");
     }
 
+    // Section switching
+    function showSection(name) {
+      document.querySelectorAll(".admin-section").forEach(s => s.classList.remove("active"));
+      document.getElementById(`section-${name}`).classList.add("active");
+      if (name === "staff") loadStaff();
+      if (name === "logs") loadLogs();
+    }
+
+    // Log filter
     function applyLogFilter() {
-      const d = document.getElementById("log-date-filter").value;
-      loadLogs(d);
+      loadLogs(document.getElementById("log-date-filter").value);
     }
-
     function clearLogFilter() {
       document.getElementById("log-date-filter").value = "";
       loadLogs();
     }
 
+    // Initial load
     loadLogs();
   </script>
 </body>

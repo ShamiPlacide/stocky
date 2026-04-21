@@ -15,24 +15,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 class VariantSerializer(serializers.ModelSerializer):
     class Meta:
         model = Variant
-        fields = ["id", "item", "color", "length", "quantity"]
-
-    def validate(self, data):
-        item = data.get("item", getattr(self.instance, "item", None))
-        length = data.get("length", getattr(self.instance, "length", None))
-
-        if item is None:
-            return data
-
-        if item.unit == "meters" and length is None:
-            raise serializers.ValidationError(
-                {"length": "Length is required when item unit is 'meters'."}
-            )
-        if item.unit == "boxes" and length is not None:
-            raise serializers.ValidationError(
-                {"length": "Length must be omitted when item unit is 'boxes'."}
-            )
-        return data
+        fields = ["id", "item", "code", "name", "quantity"]
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -40,13 +23,23 @@ class ItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Item
-        fields = ["id", "name", "unit", "created_at", "variants"]
+        fields = ["id", "name", "created_at", "variants"]
 
 
-class UserSerializer(serializers.ModelSerializer):
+class StaffSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=6)
+
     class Meta:
         model = User
-        fields = ["id", "username", "role"]
+        fields = ["id", "username", "role", "date_joined", "password"]
+        read_only_fields = ["id", "date_joined"]
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
 
 
 class LogSerializer(serializers.ModelSerializer):

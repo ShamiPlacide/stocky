@@ -3,19 +3,19 @@ from datetime import date
 from django.db.models import F
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, viewsets
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import DailyReport, Item, Log, Variant
+from .models import DailyReport, Item, Log, User, Variant
 from .permissions import IsAdmin
 from .serializers import (
     CustomTokenObtainPairSerializer,
-    DailyReportSerializer,
     ItemSerializer,
     LogSerializer,
+    StaffSerializer,
     VariantSerializer,
 )
 
@@ -142,8 +142,7 @@ class LogListView(APIView):
         date_filter = request.query_params.get("date")
         if date_filter:
             logs = logs.filter(timestamp__date=date_filter)
-        serializer = LogSerializer(logs, many=True)
-        return Response(serializer.data)
+        return Response(LogSerializer(logs, many=True).data)
 
 
 class DailyReportView(APIView):
@@ -151,21 +150,39 @@ class DailyReportView(APIView):
 
     def get(self, request):
         today = date.today()
-        logs_today = Log.objects.filter(timestamp__date=today).select_related(
-            "user", "variant__item"
-        )
+        logs_today = Log.objects.filter(timestamp__date=today).select_related("user", "variant__item")
         all_variants = Variant.objects.select_related("item").all()
 
-        report_record = DailyReport.objects.create(
-            date=today,
-            generated_by=request.user,
-        )
+        DailyReport.objects.create(date=today, generated_by=request.user)
 
-        return Response(
-            {
-                "date": str(today),
-                "report_id": report_record.id,
-                "logs": LogSerializer(logs_today, many=True).data,
-                "inventory_snapshot": VariantSerializer(all_variants, many=True).data,
-            }
-        )
+        return Response({
+            "date": str(today),
+            "logs": LogSerializer(logs_today, many=True).data,
+            "inventory_snapshot": VariantSerializer(all_variants, many=True).data,
+        })
+
+
+class StaffListView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        staff = User.objects.all().order_by("username")
+        return Response(StaffSerializer(staff, many=True).data)
+
+    def post(self, request):
+        serializer = StaffSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response(StaffSerializer(user).data, status=201)
+        return Response(serializer.errors, status=400)
+
+
+class StaffDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def delete(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        if user == request.user:
+            return Response({"error": "You cannot delete your own account."}, status=400)
+        user.delete()
+        return Response({"detail": "User deleted."})

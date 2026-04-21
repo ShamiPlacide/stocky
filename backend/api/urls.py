@@ -8,6 +8,8 @@ from .views import (
     ItemViewSet,
     LogListView,
     LogoutView,
+    StaffDetailView,
+    StaffListView,
     StockAddView,
     StockRemoveView,
     VariantViewSet,
@@ -25,5 +27,7 @@ urlpatterns = [
     path("stock/remove/", StockRemoveView.as_view(), name="stock_remove"),
     path("logs/", LogListView.as_view(), name="logs"),
     path("report/daily/", DailyReportView.as_view(), name="report_daily"),
+    path("staff/", StaffListView.as_view(), name="staff_list"),
+    path("staff/<int:pk>/", StaffDetailView.as_view(), name="staff_detail"),
     path("", include(router.urls)),
 ]
