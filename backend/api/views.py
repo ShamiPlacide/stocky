@@ -150,15 +150,18 @@ class DailyReportView(APIView):
 
     def get(self, request):
         today = date.today()
-        logs_today = Log.objects.filter(timestamp__date=today).select_related("user", "variant__item")
-        all_variants = Variant.objects.select_related("item").all()
+        logs_today = Log.objects.filter(
+            timestamp__date=today,
+            action__in=["ADD", "REMOVE"],
+        ).select_related("user", "variant__item")
+        items = Item.objects.prefetch_related("variants").order_by("name")
 
         DailyReport.objects.create(date=today, generated_by=request.user)
 
         return Response({
             "date": str(today),
             "logs": LogSerializer(logs_today, many=True).data,
-            "inventory_snapshot": VariantSerializer(all_variants, many=True).data,
+            "items": ItemSerializer(items, many=True).data,
         })
 
 

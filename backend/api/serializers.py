@@ -13,9 +13,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class VariantSerializer(serializers.ModelSerializer):
+    item_name = serializers.CharField(source="item.name", read_only=True)
+
     class Meta:
         model = Variant
-        fields = ["id", "item", "code", "name", "quantity"]
+        fields = ["id", "item", "item_name", "code", "name", "quantity"]
 
 
 class ItemSerializer(serializers.ModelSerializer):
