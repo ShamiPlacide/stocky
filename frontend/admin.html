@@ -236,8 +236,13 @@
       loadLogs();
     }
 
-    // Initial load
-    loadLogs();
+    // Initial load — honour ?s= query param for direct-links from dashboard
+    const urlSection = new URLSearchParams(location.search).get("s");
+    if (urlSection && ["logs", "staff", "report"].includes(urlSection)) {
+      showSection(urlSection);
+    } else {
+      loadLogs();
+    }
   </script>
 </body>
 </html>

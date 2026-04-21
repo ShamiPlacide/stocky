@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,8 +10,45 @@
 </head>
 <body>
 
+  <!-- Sidebar overlay (admin only) -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar (admin only) -->
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">Menu</span>
+      <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="/admin.html" class="sidebar-item">
+        <span class="sidebar-icon">📜</span> Logs
+      </a>
+      <a href="/admin.html?s=staff" class="sidebar-item">
+        <span class="sidebar-icon">👥</span> Staff
+      </a>
+      <a href="/admin.html?s=report" class="sidebar-item">
+        <span class="sidebar-icon">📊</span> Reports
+      </a>
+    </nav>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-item theme-toggle-row">
+      <span><span class="sidebar-icon">🌙</span> Dark Mode</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode(this.checked)" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="sidebar-divider"></div>
+    <button class="sidebar-item danger" onclick="logout()">
+      <span class="sidebar-icon">🚪</span> Sign out
+    </button>
+  </aside>
+
   <header class="app-header">
     <div class="header-left">
+      <button id="hamburger-btn" class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu" style="display:none">
+        <span></span><span></span><span></span>
+      </button>
       <span class="app-title">📦 Stocky</span>
       <div id="offline-badge" class="offline-badge">
         <div class="offline-dot"></div>
@@ -23,7 +60,6 @@
         <span id="header-username"></span>
         <span id="header-role" class="role-badge"></span>
       </div>
-      <a id="admin-link" href="/admin.html" class="nav-link" style="display:none">Admin</a>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Sign out</button>
     </div>
   </header>
@@ -133,7 +169,28 @@
     const roleBadge = document.getElementById("header-role");
     roleBadge.textContent = role;
     if (role === "staff") roleBadge.classList.add("staff");
-    if (role === "admin") document.getElementById("admin-link").style.display = "";
+
+    // Show hamburger and sidebar only for admins
+    if (role === "admin") {
+      document.getElementById("hamburger-btn").style.display = "";
+    }
+
+    function openSidebar() {
+      document.getElementById("sidebar").classList.add("open");
+      document.getElementById("sidebar-overlay").classList.add("visible");
+    }
+    function closeSidebar() {
+      document.getElementById("sidebar").classList.remove("open");
+      document.getElementById("sidebar-overlay").classList.remove("visible");
+    }
+
+    function toggleDarkMode(on) {
+      document.documentElement.setAttribute("data-theme", on ? "dark" : "light");
+      localStorage.setItem("stocky_dark", on ? "1" : "0");
+    }
+    const savedDark = localStorage.getItem("stocky_dark") === "1";
+    document.getElementById("dark-mode-toggle").checked = savedDark;
+    if (savedDark) document.documentElement.setAttribute("data-theme", "dark");
 
     function updateOfflineBadge() {
       const badge = document.getElementById("offline-badge");
