@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import DailyReport, Item, Log, User, Variant
+from .models import DailyReport, Item, Log, Sale, SaleItem, User, Variant
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -51,6 +51,21 @@ class LogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Log
         fields = ["id", "user", "action", "variant", "variant_detail", "quantity_changed", "timestamp"]
+
+
+class SaleItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SaleItem
+        fields = ["id", "variant", "variant_code", "variant_name", "item_name", "quantity"]
+
+
+class SaleSerializer(serializers.ModelSerializer):
+    items = SaleItemSerializer(many=True, read_only=True)
+    created_by = serializers.StringRelatedField()
+
+    class Meta:
+        model = Sale
+        fields = ["id", "customer_name", "created_by", "created_at", "items"]
 
 
 class DailyReportSerializer(serializers.ModelSerializer):

@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.db import transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404
 from rest_framework import filters, viewsets
@@ -9,12 +10,13 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import DailyReport, Item, Log, User, Variant
+from .models import DailyReport, Item, Log, Sale, SaleItem, User, Variant
 from .permissions import IsAdmin
 from .serializers import (
     CustomTokenObtainPairSerializer,
     ItemSerializer,
     LogSerializer,
+    SaleSerializer,
     StaffSerializer,
     VariantSerializer,
 )
@@ -163,6 +165,63 @@ class DailyReportView(APIView):
             "logs": LogSerializer(logs_today, many=True).data,
             "items": ItemSerializer(items, many=True).data,
         })
+
+
+class SaleListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sales = Sale.objects.prefetch_related("items").select_related("created_by").all()
+        return Response(SaleSerializer(sales, many=True).data)
+
+    def post(self, request):
+        customer_name = request.data.get("customer_name", "").strip()
+        items_data = request.data.get("items", [])
+
+        if not customer_name:
+            return Response({"error": "customer_name is required."}, status=400)
+        if not items_data:
+            return Response({"error": "At least one item is required."}, status=400)
+
+        with transaction.atomic():
+            for entry in items_data:
+                try:
+                    qty = int(entry.get("quantity", 0))
+                except (TypeError, ValueError):
+                    return Response({"error": "quantity must be an integer."}, status=400)
+                if qty <= 0:
+                    return Response({"error": "quantity must be positive."}, status=400)
+                variant = get_object_or_404(Variant, pk=entry.get("variant_id"))
+                if variant.quantity < qty:
+                    return Response(
+                        {"error": f"Insufficient stock for {variant.code} — {variant.name}."},
+                        status=400,
+                    )
+
+            sale = Sale.objects.create(customer_name=customer_name, created_by=request.user)
+
+            for entry in items_data:
+                qty = int(entry["quantity"])
+                variant = Variant.objects.select_related("item").get(pk=entry["variant_id"])
+                SaleItem.objects.create(
+                    sale=sale,
+                    variant=variant,
+                    variant_code=variant.code,
+                    variant_name=variant.name,
+                    item_name=variant.item.name,
+                    quantity=qty,
+                )
+                variant.quantity = F("quantity") - qty
+                variant.save(update_fields=["quantity"])
+                Log.objects.create(
+                    user=request.user,
+                    action="SALE",
+                    variant=variant,
+                    quantity_changed=-qty,
+                )
+
+        sale.refresh_from_db()
+        return Response(SaleSerializer(Sale.objects.prefetch_related("items").get(pk=sale.pk)).data, status=201)
 
 
 class StaffListView(APIView):

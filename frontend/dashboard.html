@@ -23,14 +23,17 @@
       <button class="sidebar-item" onclick="showSection('inventory'); closeSidebar()">
         <span class="sidebar-icon">📦</span> Inventory
       </button>
-      <button class="sidebar-item" onclick="showSection('logs'); closeSidebar()">
+      <button class="sidebar-item admin-only-nav" onclick="showSection('logs'); closeSidebar()">
         <span class="sidebar-icon">📜</span> Logs
       </button>
-      <button class="sidebar-item" onclick="showSection('staff'); closeSidebar()">
+      <button class="sidebar-item admin-only-nav" onclick="showSection('staff'); closeSidebar()">
         <span class="sidebar-icon">👥</span> Staff
       </button>
-      <button class="sidebar-item" onclick="showSection('report'); closeSidebar()">
+      <button class="sidebar-item admin-only-nav" onclick="showSection('report'); closeSidebar()">
         <span class="sidebar-icon">📊</span> Reports
+      </button>
+      <button class="sidebar-item" id="sidebar-sales-btn" onclick="showSection('sales'); closeSidebar()">
+        <span class="sidebar-icon">🧾</span> Sales
       </button>
     </nav>
     <div class="sidebar-divider"></div>
@@ -151,6 +154,32 @@
       </div>
     </div>
 
+    <!-- Sales section (all users) -->
+    <div id="section-sales" class="admin-section">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+          <h2>Sales</h2>
+          <p>Record and review customer sales.</p>
+        </div>
+        <button class="btn btn-primary" style="width:auto" onclick="openSaleModal()">+ New Sale</button>
+      </div>
+      <div class="logs-table-wrap">
+        <table class="logs-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Client</th>
+              <th>Items</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody id="sales-tbody">
+            <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
 
   <!-- FAB: only visible on inventory section -->
@@ -263,6 +292,81 @@
     </div>
   </div>
 
+  <!-- New Sale Modal -->
+  <div id="sale-modal" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <span class="modal-title">New Sale</span>
+        <button class="modal-close" onclick="closeSaleModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="sale-customer">Client Name</label>
+          <input type="text" id="sale-customer" placeholder="e.g. John Doe" autocomplete="off" />
+        </div>
+        <div style="margin-top:16px;margin-bottom:8px">
+          <label style="font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--text)">Add Items</label>
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <div class="form-group" style="margin:0;flex:1;min-width:120px">
+            <label for="sale-code-input">Variant Code</label>
+            <input type="text" id="sale-code-input" placeholder="e.g. ABC-01" autocomplete="off"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();searchSaleVariant();}" />
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" style="align-self:flex-end;white-space:nowrap" onclick="searchSaleVariant()">Search</button>
+        </div>
+        <div id="sale-variant-preview" style="margin-top:8px"></div>
+        <div style="display:flex;gap:8px;align-items:flex-end;margin-top:10px;flex-wrap:wrap">
+          <div class="form-group" style="margin:0;flex:0 0 120px">
+            <label for="sale-qty-input">Quantity</label>
+            <input type="number" id="sale-qty-input" min="1" value="1" />
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" style="align-self:flex-end;white-space:nowrap;width:auto" onclick="addSaleItem()">+ Add to Sale</button>
+        </div>
+        <div style="margin-top:16px;margin-bottom:8px">
+          <label style="font-size:14px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--text)">Cart</label>
+        </div>
+        <div id="sale-cart" class="sale-cart"></div>
+        <div id="sale-error" class="error-msg" style="margin-top:10px"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeSaleModal()">Cancel</button>
+        <button type="button" id="sale-submit-btn" class="btn btn-primary" style="width:auto" onclick="submitSale()">Complete Sale</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt Modal -->
+  <div id="receipt-modal" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <span class="modal-title">Receipt <span id="receipt-sale-id" style="font-weight:400;font-size:14px"></span></span>
+        <button class="modal-close" onclick="closeReceiptModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px;font-size:13px;color:var(--text-muted)">
+          <span id="receipt-date"></span>
+          <span>By: <strong id="receipt-by"></strong></span>
+        </div>
+        <div style="margin-bottom:12px;font-size:15px">
+          Client: <strong id="receipt-customer"></strong>
+        </div>
+        <div class="logs-table-wrap">
+          <table class="logs-table">
+            <thead>
+              <tr><th>Code</th><th>Item</th><th>Variant</th><th style="text-align:center">Qty</th></tr>
+            </thead>
+            <tbody id="receipt-items-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeReceiptModal()">Close</button>
+        <button type="button" class="btn btn-primary" style="width:auto" onclick="downloadReceiptPDF()">Download PDF</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-container" class="toast-container"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -274,6 +378,7 @@
   <script src="/js/modals.js"></script>
   <script src="/js/report.js"></script>
   <script src="/js/staff.js"></script>
+  <script src="/js/sales.js"></script>
   <script>
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 
@@ -285,8 +390,10 @@
     roleBadge.textContent = role;
     if (role === "staff") roleBadge.classList.add("staff");
 
-    if (role === "admin") {
-      document.getElementById("hamburger-btn").style.display = "";
+    // All users get the hamburger (for Sales nav); admin-only items hidden for staff
+    document.getElementById("hamburger-btn").style.display = "";
+    if (role === "staff") {
+      document.querySelectorAll(".admin-only-nav").forEach(el => el.style.display = "none");
     } else {
       document.getElementById("staff-dark-toggle").style.display = "";
     }
@@ -320,6 +427,7 @@
       document.getElementById("fab-add").style.display = name === "inventory" ? "" : "none";
       if (name === "logs") loadLogs();
       if (name === "staff") loadStaff();
+      if (name === "sales") loadSales();
       if (name === "inventory") { lowStockAlertShown = false; loadInventory(); }
     }
 
