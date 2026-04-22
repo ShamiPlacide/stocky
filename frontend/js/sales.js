@@ -3,7 +3,7 @@ let foundVariant = null;
 let currentReceipt = null;
 
 function loadSales() {
-  apiFetch(`${API_BASE}/sales/`)
+  apiFetch(`/api/sales/`)
     .then(r => r.json())
     .then(data => {
       const tbody = document.getElementById("sales-tbody");
@@ -143,7 +143,7 @@ function submitSale() {
   btn.disabled = true;
   btn.textContent = "Saving…";
 
-  apiFetch(`${API_BASE}/sales/`, {
+  apiFetch(`/api/sales/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
