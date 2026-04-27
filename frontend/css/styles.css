@@ -1103,6 +1103,9 @@ input:focus, select:focus, textarea:focus {
 }
 .sale-cart-remove:hover { color: var(--danger); background: var(--danger-bg, #fee2e2); }
 
+.sale-row { cursor: pointer; transition: background 0.12s; }
+.sale-row:hover { background: var(--bg-hover, rgba(37,99,235,0.06)); }
+
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .auth-card { padding: 28px 20px; }

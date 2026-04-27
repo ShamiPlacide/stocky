@@ -1,18 +1,20 @@
 let saleItems = [];
 let foundVariant = null;
 let currentReceipt = null;
+let salesData = [];
 
 function loadSales() {
   apiFetch(`/api/sales/`)
     .then(r => r.json())
     .then(data => {
+      salesData = data;
       const tbody = document.getElementById("sales-tbody");
       if (!data.length) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-muted)">No sales yet.</td></tr>`;
         return;
       }
-      tbody.innerHTML = data.map(s => `
-        <tr>
+      tbody.innerHTML = data.map((s, i) => `
+        <tr class="sale-row" onclick="viewSale(${i})" title="View receipt">
           <td>${new Date(s.created_at).toLocaleString()}</td>
           <td>${escHtml(s.customer_name)}</td>
           <td>${s.items.length} item${s.items.length !== 1 ? "s" : ""}</td>
@@ -21,6 +23,11 @@ function loadSales() {
       `).join("");
     })
     .catch(() => {});
+}
+
+function viewSale(idx) {
+  currentReceipt = salesData[idx];
+  openReceiptModal(salesData[idx]);
 }
 
 function openSaleModal() {
